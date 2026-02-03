@@ -2,116 +2,120 @@ import path from 'path';
 import fs from 'fs';
 
 interface Hotspot {
-    id: string;
-    pageIndex: number;
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-    url: string;
-    label?: string;
+  id: string;
+  pageIndex: number;
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  url: string;
+  label?: string;
 }
 
 interface LeadGenConfig {
-    enabled: boolean;
-    freePages: number;
-    fields?: {
-        name: boolean;
-        email: boolean;
-        company: boolean;
-        phone: boolean;
-    };
-    webhookUrl?: string;
+  enabled: boolean;
+  freePages: number;
+  fields?: {
+    name: boolean;
+    email: boolean;
+    company: boolean;
+    phone: boolean;
+  };
+  webhookUrl?: string;
 }
 
 interface TemplateOptions {
-    jobId: string;
-    outputDir: string;
-    template: 'presentation' | 'flipbook' | 'documentation';
-    title: string;
-    pageCount: number;
-    hotspots: Hotspot[];
-    leadGen: LeadGenConfig;
-    customCss?: string;
+  jobId: string;
+  outputDir: string;
+  template: 'presentation' | 'flipbook' | 'documentation';
+  title: string;
+  pageCount: number;
+  hotspots: Hotspot[];
+  leadGen: LeadGenConfig;
+  customCss?: string;
 }
 
 /**
  * Generate the final HTML output with the selected template
  */
 export async function generateTemplate(options: TemplateOptions): Promise<void> {
-    const { jobId, outputDir, template, title, pageCount, hotspots, leadGen, customCss } = options;
+  const { jobId, outputDir, template, title, pageCount, hotspots, leadGen, customCss } = options;
 
-    const pagesDir = path.join(outputDir, 'pages');
-    const assetsDir = path.join(outputDir, 'assets');
-    const jsDir = path.join(outputDir, 'js');
+  const pagesDir = path.join(outputDir, 'pages');
+  const assetsDir = path.join(outputDir, 'assets');
+  const jsDir = path.join(outputDir, 'js');
 
-    // Ensure js directory exists
-    if (!fs.existsSync(jsDir)) {
-        fs.mkdirSync(jsDir, { recursive: true });
-    }
+  // Ensure js directory exists
+  if (!fs.existsSync(jsDir)) {
+    fs.mkdirSync(jsDir, { recursive: true });
+  }
 
-    // Read page contents
-    const pages: { index: number; content: string; hotspots: Hotspot[] }[] = [];
+  // Read page contents
+  const pages: { index: number; content: string; hotspots: Hotspot[] }[] = [];
 
-    for (let i = 1; i <= pageCount; i++) {
-        const pagePath = path.join(pagesDir, `page${i}.html`);
-        let content = '';
+  for (let i = 1; i <= pageCount; i++) {
+    const pagePath = path.join(pagesDir, `page${i}.html`);
+    let content = '';
 
-        if (fs.existsSync(pagePath)) {
-            content = fs.readFileSync(pagePath, 'utf-8');
-            // Extract body content only
-            const bodyMatch = content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-            if (bodyMatch) {
-                content = bodyMatch[1];
-            }
-        } else {
-            // Try alternative naming conventions
-            const files = fs.readdirSync(pagesDir).filter(f => f.endsWith('.html'));
-            if (files[i - 1]) {
-                content = fs.readFileSync(path.join(pagesDir, files[i - 1]), 'utf-8');
-                const bodyMatch = content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-                if (bodyMatch) {
-                    content = bodyMatch[1];
-                }
-            }
+    if (fs.existsSync(pagePath)) {
+      content = fs.readFileSync(pagePath, 'utf-8');
+      // Extract body content only
+      const bodyMatch = content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      if (bodyMatch) {
+        content = bodyMatch[1];
+        // Fix relative paths - pages reference ../assets/ but template is in root
+        content = content.replace(/\.\.\/assets\//g, 'assets/');
+      }
+    } else {
+      // Try alternative naming conventions
+      const files = fs.readdirSync(pagesDir).filter(f => f.endsWith('.html'));
+      if (files[i - 1]) {
+        content = fs.readFileSync(path.join(pagesDir, files[i - 1]), 'utf-8');
+        const bodyMatch = content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if (bodyMatch) {
+          content = bodyMatch[1];
+          // Fix relative paths
+          content = content.replace(/\.\.\/assets\//g, 'assets/');
         }
-
-        const pageHotspots = hotspots.filter(h => h.pageIndex === i - 1);
-
-        pages.push({
-            index: i,
-            content,
-            hotspots: pageHotspots
-        });
+      }
     }
 
-    // Generate template-specific assets
-    switch (template) {
-        case 'presentation':
-            await generatePresentationTemplate(outputDir, pages, title, leadGen, customCss);
-            break;
-        case 'flipbook':
-            await generateFlipbookTemplate(outputDir, pages, title, leadGen, customCss);
-            break;
-        case 'documentation':
-            await generateDocumentationTemplate(outputDir, pages, title, leadGen, customCss);
-            break;
-        default:
-            await generatePresentationTemplate(outputDir, pages, title, leadGen, customCss);
-    }
+    const pageHotspots = hotspots.filter(h => h.pageIndex === i - 1);
+
+    pages.push({
+      index: i,
+      content,
+      hotspots: pageHotspots
+    });
+  }
+
+  // Generate template-specific assets
+  switch (template) {
+    case 'presentation':
+      await generatePresentationTemplate(outputDir, pages, title, leadGen, customCss);
+      break;
+    case 'flipbook':
+      await generateFlipbookTemplate(outputDir, pages, title, leadGen, customCss);
+      break;
+    case 'documentation':
+      await generateDocumentationTemplate(outputDir, pages, title, leadGen, customCss);
+      break;
+    default:
+      await generatePresentationTemplate(outputDir, pages, title, leadGen, customCss);
+  }
 }
 
 /**
  * Generate Presentation template (Reveal.js style)
  */
 async function generatePresentationTemplate(
-    outputDir: string,
-    pages: { index: number; content: string; hotspots: Hotspot[] }[],
-    title: string,
-    leadGen: LeadGenConfig,
-    customCss?: string
+  outputDir: string,
+  pages: { index: number; content: string; hotspots: Hotspot[] }[],
+  title: string,
+  leadGen: LeadGenConfig,
+  customCss?: string
 ): Promise<void> {
-    const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -409,11 +413,11 @@ async function generatePresentationTemplate(
 </body>
 </html>`;
 
-    // Write main HTML
-    fs.writeFileSync(path.join(outputDir, 'index.html'), html);
+  // Write main HTML
+  fs.writeFileSync(path.join(outputDir, 'index.html'), html);
 
-    // Write navigation JS
-    const navJs = `
+  // Write navigation JS
+  const navJs = `
 (function() {
   let currentIndex = 0;
   const slides = document.querySelectorAll('.slide');
@@ -528,26 +532,26 @@ async function generatePresentationTemplate(
 })();
 `;
 
-    fs.writeFileSync(path.join(outputDir, 'js', 'navigation.js'), navJs);
+  fs.writeFileSync(path.join(outputDir, 'js', 'navigation.js'), navJs);
 
-    // Write template CSS
-    const templateCss = `
+  // Write template CSS
+  const templateCss = `
 /* Template-specific styles */
 `;
-    fs.writeFileSync(path.join(outputDir, 'assets', 'template.css'), templateCss);
+  fs.writeFileSync(path.join(outputDir, 'assets', 'template.css'), templateCss);
 }
 
 /**
  * Generate Flipbook template (3D page turning)
  */
 async function generateFlipbookTemplate(
-    outputDir: string,
-    pages: { index: number; content: string; hotspots: Hotspot[] }[],
-    title: string,
-    leadGen: LeadGenConfig,
-    customCss?: string
+  outputDir: string,
+  pages: { index: number; content: string; hotspots: Hotspot[] }[],
+  title: string,
+  leadGen: LeadGenConfig,
+  customCss?: string
 ): Promise<void> {
-    const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -821,10 +825,10 @@ async function generateFlipbookTemplate(
 </body>
 </html>`;
 
-    fs.writeFileSync(path.join(outputDir, 'index.html'), html);
+  fs.writeFileSync(path.join(outputDir, 'index.html'), html);
 
-    // Flipbook navigation JS
-    const flipbookJs = `
+  // Flipbook navigation JS
+  const flipbookJs = `
 (function() {
   let currentPage = 0;
   const pages = document.querySelectorAll('.page');
@@ -896,20 +900,20 @@ async function generateFlipbookTemplate(
 })();
 `;
 
-    fs.writeFileSync(path.join(outputDir, 'js', 'flipbook.js'), flipbookJs);
+  fs.writeFileSync(path.join(outputDir, 'js', 'flipbook.js'), flipbookJs);
 }
 
 /**
  * Generate Documentation template (vertical scroll with ToC)
  */
 async function generateDocumentationTemplate(
-    outputDir: string,
-    pages: { index: number; content: string; hotspots: Hotspot[] }[],
-    title: string,
-    leadGen: LeadGenConfig,
-    customCss?: string
+  outputDir: string,
+  pages: { index: number; content: string; hotspots: Hotspot[] }[],
+  title: string,
+  leadGen: LeadGenConfig,
+  customCss?: string
 ): Promise<void> {
-    const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1269,10 +1273,10 @@ async function generateDocumentationTemplate(
 </body>
 </html>`;
 
-    fs.writeFileSync(path.join(outputDir, 'index.html'), html);
+  fs.writeFileSync(path.join(outputDir, 'index.html'), html);
 
-    // Documentation navigation JS
-    const docJs = `
+  // Documentation navigation JS
+  const docJs = `
 (function() {
   const links = document.querySelectorAll('.toc-link');
   const sections = document.querySelectorAll('.section');
@@ -1336,14 +1340,14 @@ async function generateDocumentationTemplate(
 })();
 `;
 
-    fs.writeFileSync(path.join(outputDir, 'js', 'documentation.js'), docJs);
+  fs.writeFileSync(path.join(outputDir, 'js', 'documentation.js'), docJs);
 }
 
 function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
