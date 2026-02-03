@@ -80,6 +80,21 @@ export async function generateTemplate(options: TemplateOptions): Promise<void> 
       }
     }
 
+    // Fallback: If no HTML content, try to use image directly from assets
+    if (!content || content.trim() === '') {
+      const imagePath = path.join(assetsDir, `page${i}.png`);
+      if (fs.existsSync(imagePath)) {
+        content = `<div class="pdf-page" data-page="${i}">
+          <img src="assets/page${i}.png" alt="Page ${i}" style="width:100%;height:auto;" />
+        </div>`;
+      } else {
+        // Last fallback - show loading placeholder
+        content = `<div class="pdf-page" data-page="${i}">
+          <p style="padding:40px;text-align:center;color:#666;">Page ${i}</p>
+        </div>`;
+      }
+    }
+
     const pageHotspots = hotspots.filter(h => h.pageIndex === i - 1);
 
     pages.push({

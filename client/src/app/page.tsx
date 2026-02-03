@@ -615,12 +615,13 @@ export default function Home() {
     <main className={styles.main}>
       <header className={styles.header}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}>PDF</span>
+          <img src="/logo.png" alt="PDF Slideshow" className={styles.logoImg} />
           <span>PDF Slideshow</span>
         </div>
         <nav className={styles.nav}>
           <a href="#features">Features</a>
           <a href="#templates">Templates</a>
+          <a href="https://github.com/BROHUHA/pdf-to-presentation" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </header>
 
@@ -646,6 +647,23 @@ export default function Home() {
         {currentStep === 'customize' && renderCustomizeStep()}
         {currentStep === 'export' && renderExportStep()}
       </div>
+
+      <footer className={styles.footer}>
+        <div className={styles.footerContent}>
+          <div className={styles.footerBrand}>
+            <img src="/logo.png" alt="PDF Slideshow" className={styles.footerLogo} />
+            <span>PDF Slideshow</span>
+          </div>
+          <div className={styles.footerLinks}>
+            <a href="#features">Features</a>
+            <a href="#templates">Templates</a>
+            <a href="https://github.com/BROHUHA/pdf-to-presentation" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </div>
+          <div className={styles.footerCopyright}>
+            © 2024 PDF Slideshow. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
