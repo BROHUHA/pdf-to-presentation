@@ -53,6 +53,22 @@ export default function Home() {
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
   const [mobileReflowEnabled, setMobileReflowEnabled] = useState(false);
 
+  // Conversion timer
+  const [conversionTime, setConversionTime] = useState(0);
+  const [conversionProgress, setConversionProgress] = useState('');
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isConverting) {
+      setConversionTime(0);
+      interval = setInterval(() => {
+        setConversionTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isConverting]);
+
   const handleUpload = useCallback(async (file: File) => {
     if (!file.type.includes('pdf')) {
       alert('Please upload a PDF file');
@@ -326,7 +342,18 @@ export default function Home() {
           <div className={styles.uploadingContent}>
             <div className={styles.spinner}></div>
             <p>{isUploading ? 'Uploading PDF...' : 'Converting to HTML...'}</p>
-            <span className={styles.uploadingHint}>This may take a moment</span>
+            {isConverting && (
+              <div className={styles.timerDisplay}>
+                <span className={styles.timer}>
+                  {Math.floor(conversionTime / 60).toString().padStart(2, '0')}:
+                  {(conversionTime % 60).toString().padStart(2, '0')}
+                </span>
+                <span className={styles.timerLabel}>elapsed</span>
+              </div>
+            )}
+            <span className={styles.uploadingHint}>
+              {conversionProgress || 'Rendering pages with PDF.js...'}
+            </span>
           </div>
         ) : (
           <>
