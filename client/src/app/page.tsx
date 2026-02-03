@@ -89,7 +89,8 @@ export default function Home() {
     setIsConverting(true);
 
     try {
-      await fetch(`${API_URL}/api/convert/${jobId}`, {
+      // First try server-side conversion
+      const serverResponse = await fetch(`${API_URL}/api/convert/${jobId}`, {
         method: 'POST'
       });
 
@@ -99,11 +100,20 @@ export default function Home() {
         const status = await response.json();
 
         if (status.status === 'completed') {
-          setJob(status);
-          setCurrentStep('customize');
-          setIsConverting(false);
+          // Check if conversion actually worked (pageCount > 0)
+          if (status.pageCount && status.pageCount > 0) {
+            setJob(status);
+            setCurrentStep('customize');
+            setIsConverting(false);
+          } else {
+            // Server conversion failed (no Docker), fall back to client-side
+            console.log('Server conversion incomplete, trying client-side rendering...');
+            await clientSideRender(jobId, status.originalName);
+          }
         } else if (status.status === 'failed') {
-          throw new Error(status.error || 'Conversion failed');
+          // Try client-side rendering as fallback
+          console.log('Server conversion failed, trying client-side rendering...');
+          await clientSideRender(jobId, status.originalName);
         } else {
           setTimeout(pollStatus, 1000);
         }
@@ -112,7 +122,81 @@ export default function Home() {
       setTimeout(pollStatus, 2000);
     } catch (error: any) {
       console.error('Conversion error:', error);
-      alert(`Conversion failed: ${error.message}`);
+      // Try client-side as last resort
+      try {
+        await clientSideRender(jobId, job?.originalName || 'document');
+      } catch (clientError: any) {
+        alert(`Conversion failed: ${clientError.message}`);
+        setIsConverting(false);
+      }
+    }
+  };
+
+  // Client-side PDF rendering using PDF.js 
+  const clientSideRender = async (jobId: string, fileName: string) => {
+    try {
+      // Dynamically import PDF.js
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+      // Get the PDF file from server
+      const pdfResponse = await fetch(`${API_URL}/api/upload/file/${jobId}`);
+      const pdfBlob = await pdfResponse.blob();
+      const arrayBuffer = await pdfBlob.arrayBuffer();
+
+      // Load the PDF
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pageCount = pdf.numPages;
+      const pages: string[] = [];
+
+      // Render each page to canvas and convert to base64
+      for (let i = 1; i <= pageCount; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2.0 }); // High quality
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d')!;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+          canvas: canvas
+        } as any).promise;
+
+        // Convert canvas to base64 PNG
+        const dataUrl = canvas.toDataURL('image/png', 0.92);
+        pages.push(dataUrl);
+      }
+
+      // Send rendered pages to server
+      const saveResponse = await fetch(`${API_URL}/api/render/pages/${jobId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pages,
+          title: fileName.replace('.pdf', '')
+        })
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save rendered pages');
+      }
+
+      // Update job status
+      setJob({
+        id: jobId,
+        originalName: fileName,
+        status: 'completed',
+        pageCount: pageCount,
+        title: fileName.replace('.pdf', '')
+      });
+      setCurrentStep('customize');
+      setIsConverting(false);
+    } catch (error: any) {
+      console.error('Client-side rendering failed:', error);
+      alert(`Rendering failed: ${error.message}`);
       setIsConverting(false);
     }
   };

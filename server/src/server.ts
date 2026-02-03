@@ -8,6 +8,7 @@ import exportRoutes from './routes/export.routes';
 import aiRoutes from './routes/ai.routes';
 import projectRoutes from './routes/project.routes';
 import analyticsRoutes from './routes/analytics.routes';
+import renderRoutes from './routes/render.routes';
 
 dotenv.config();
 
@@ -21,8 +22,8 @@ app.use(cors({
         : 'http://localhost:3000',
     credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Static files for previews
 app.use('/previews', express.static(path.join(__dirname, '../uploads/previews')));
@@ -35,6 +36,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/render', renderRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

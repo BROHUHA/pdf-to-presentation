@@ -102,6 +102,24 @@ router.get('/status/:jobId', (req, res) => {
     res.json(job);
 });
 
+// Serve PDF file for client-side rendering
+router.get('/file/:jobId', (req, res) => {
+    const { jobId } = req.params;
+    const job = jobs.get(jobId);
+
+    if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+    }
+
+    if (!fs.existsSync(job.filePath)) {
+        return res.status(404).json({ error: 'PDF file not found' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${job.originalName}"`);
+    fs.createReadStream(job.filePath).pipe(res);
+});
+
 // Get all jobs
 router.get('/jobs', (req, res) => {
     const jobList = Array.from(jobs.values())
