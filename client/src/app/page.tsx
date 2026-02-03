@@ -171,6 +171,7 @@ export default function Home() {
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const pageCount = pdf.numPages;
       const pages: string[] = [];
+      const textContent: string[] = [];
 
       // Render each page to canvas and convert to base64
       for (let i = 1; i <= pageCount; i++) {
@@ -188,17 +189,27 @@ export default function Home() {
           canvas: canvas
         } as any).promise;
 
+        // Extract text content
+        const textContentItem = await page.getTextContent();
+        const pageText = textContentItem.items.map((item: any) => item.str).join(' ');
+        textContent.push(pageText);
+
         // Convert canvas to base64 PNG
         const dataUrl = canvas.toDataURL('image/png', 0.92);
         pages.push(dataUrl);
+
+        // Update progress
+        setConversionTime(i);
+        setConversionProgress(`Processing page ${i} of ${pageCount}...`);
       }
 
-      // Send rendered pages to server
+      // Send rendered pages and text to server
       const saveResponse = await fetch(`${API_URL}/api/render/pages/${jobId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pages,
+          textContent, // Send extracted text
           title: fileName.replace('.pdf', '')
         })
       });

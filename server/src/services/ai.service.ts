@@ -53,15 +53,25 @@ export function extractTextFromPages(pagesDir: string): PageContent[] {
         });
 
     files.forEach((file: string, index: number) => {
+        // Check if there is a corresponding text file first (created by client-side rendering)
+        const txtFile = file.replace('.html', '.txt');
+        const txtPath = path.join(pagesDir, txtFile);
+
+        let text = '';
         const content = fs.readFileSync(path.join(pagesDir, file), 'utf-8');
 
-        // Remove HTML tags but preserve text
-        const text = content
-            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+        if (fs.existsSync(txtPath)) {
+            // Use the extracted text directly
+            text = fs.readFileSync(txtPath, 'utf-8').trim();
+        } else {
+            // Fallback: Remove HTML tags but preserve text
+            text = content
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
 
         // Extract headings (larger font sizes often used)
         const headingMatches = content.match(/<(?:h[1-6]|div[^>]*font-size:\s*(?:1[8-9]|[2-9]\d))/gi) || [];

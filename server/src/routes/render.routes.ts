@@ -13,7 +13,7 @@ const router = Router();
 // Receive rendered page images from client
 router.post('/pages/:jobId', async (req, res) => {
   const { jobId } = req.params;
-  const { pages, title } = req.body;
+  const { pages, textContent, title } = req.body;
 
   const job = jobs.get(jobId);
 
@@ -34,11 +34,13 @@ router.post('/pages/:jobId', async (req, res) => {
       const pageData = pages[i];
       const pageNum = i + 1;
 
-      // Save image
-      const imageData = pageData.replace(/^data:image\/\w+;base64,/, '');
-      const imageBuffer = Buffer.from(imageData, 'base64');
       const imageName = `page${pageNum}.png`;
       fs.writeFileSync(path.join(assetsDir, imageName), imageBuffer);
+
+      // Save text content if available
+      if (textContent && textContent[i]) {
+        fs.writeFileSync(path.join(pagesDir, `page${pageNum}.txt`), textContent[i]);
+      }
 
       // Create HTML wrapper for page with image embedded
       const pageHtml = `<!DOCTYPE html>
