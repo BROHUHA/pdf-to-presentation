@@ -39,15 +39,25 @@ interface TemplateOptions {
  * Generate the final HTML output with the selected template
  */
 export async function generateTemplate(options: TemplateOptions): Promise<void> {
-  const { jobId, outputDir, template, title, pageCount, hotspots, leadGen, customCss } = options;
+  const { jobId, outputDir, template, title, pageCount: requestedPageCount, hotspots, leadGen, customCss } = options;
 
   const pagesDir = path.join(outputDir, 'pages');
   const assetsDir = path.join(outputDir, 'assets');
   const jsDir = path.join(outputDir, 'js');
 
-  // Ensure js directory exists
+  // Ensure directories exist
   if (!fs.existsSync(jsDir)) {
     fs.mkdirSync(jsDir, { recursive: true });
+  }
+
+  // Auto-detect page count from files for robustness
+  let pageCount = requestedPageCount;
+  if (fs.existsSync(assetsDir)) {
+    const pageImages = fs.readdirSync(assetsDir).filter(f => f.match(/^page\d+\.png$/));
+    if (pageImages.length > 0 && pageImages.length > pageCount) {
+      console.log(`Template service: auto-detected ${pageImages.length} pages (was ${pageCount})`);
+      pageCount = pageImages.length;
+    }
   }
 
   // Read page contents

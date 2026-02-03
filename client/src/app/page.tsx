@@ -274,7 +274,8 @@ export default function Home() {
           template,
           hotspots,
           leadGen,
-          title: job.title
+          title: job.title,
+          pageCount: job.pageCount || 1
         })
       });
 

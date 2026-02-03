@@ -16,7 +16,8 @@ router.post('/generate/:jobId', async (req, res) => {
         hotspots = [],
         leadGen = { enabled: false, freePages: 3 },
         title,
-        customCss
+        customCss,
+        pageCount: requestedPageCount
     } = req.body;
 
     const job = jobs.get(jobId);
@@ -31,13 +32,31 @@ router.post('/generate/:jobId', async (req, res) => {
 
     try {
         const outputDir = path.join(__dirname, '../../uploads/output', jobId);
+        const assetsDir = path.join(outputDir, 'assets');
+
+        // Determine page count: use request body, then job data, then auto-detect from files
+        let finalPageCount = requestedPageCount || job.pageCount;
+
+        // Auto-detect from files if still not set or equals 1
+        if (!finalPageCount || finalPageCount === 1) {
+            if (fs.existsSync(assetsDir)) {
+                const pageImages = fs.readdirSync(assetsDir).filter(f => f.match(/^page\d+\.png$/));
+                if (pageImages.length > 0) {
+                    finalPageCount = pageImages.length;
+                    console.log(`Auto-detected ${finalPageCount} pages from assets folder`);
+                }
+            }
+        }
+
+        // Fallback to 1 if nothing found
+        finalPageCount = finalPageCount || 1;
 
         await generateTemplate({
             jobId,
             outputDir,
             template,
             title: title || job.title || 'Presentation',
-            pageCount: job.pageCount || 1,
+            pageCount: finalPageCount,
             hotspots,
             leadGen,
             customCss
@@ -46,7 +65,8 @@ router.post('/generate/:jobId', async (req, res) => {
         res.json({
             success: true,
             message: 'Template generated successfully',
-            previewUrl: `/output/${jobId}/index.html`
+            previewUrl: `/output/${jobId}/index.html`,
+            pageCount: finalPageCount
         });
     } catch (error: any) {
         console.error('Template generation failed:', error);
