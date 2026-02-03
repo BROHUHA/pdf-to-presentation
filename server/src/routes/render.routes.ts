@@ -34,6 +34,9 @@ router.post('/pages/:jobId', async (req, res) => {
       const pageData = pages[i];
       const pageNum = i + 1;
 
+      // Save image
+      const imageData = pageData.replace(/^data:image\/\w+;base64,/, '');
+      const imageBuffer = Buffer.from(imageData, 'base64');
       const imageName = `page${pageNum}.png`;
       fs.writeFileSync(path.join(assetsDir, imageName), imageBuffer);
 
