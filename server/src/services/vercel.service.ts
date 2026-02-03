@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
-import archiver from 'archiver';
 
 const VERCEL_API_URL = 'https://api.vercel.com';
 
