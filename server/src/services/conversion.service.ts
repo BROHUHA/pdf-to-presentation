@@ -130,9 +130,9 @@ export async function convertPdfToHtml(pdfPath: string, outputDir: string): Prom
             outputPath: outputDir
         };
     } catch (error: any) {
-        // Fallback: If Docker fails, try using a simpler approach
-        console.error('Docker conversion failed, attempting fallback:', error.message);
-        return await fallbackConversion(pdfPath, outputDir);
+        // Docker is not available - let frontend handle with client-side PDF.js
+        console.error('Docker conversion failed:', error.message);
+        throw new Error('Docker unavailable - use client-side rendering');
     }
 }
 
