@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/server.ts",
-    "build": "tsc",
+    "build": "npm install typescript --save-dev && tsc",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,17 +14,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "archiver": "^7.0.1",
-    "cors": "^2.8.6",
-    "dockerode": "^4.0.9",
-    "dotenv": "^17.2.3",
-    "ejs": "^4.0.1",
-    "express": "^5.2.1",
-    "multer": "^2.0.2",
-    "sharp": "^0.34.5",
-    "uuid": "^13.0.0"
-  },
-  "devDependencies": {
     "@types/archiver": "^7.0.0",
     "@types/cors": "^2.8.19",
     "@types/dockerode": "^4.0.1",
@@ -33,8 +22,19 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^25.2.0",
     "@types/uuid": "^10.0.0",
+    "archiver": "^7.0.1",
+    "cors": "^2.8.6",
+    "dockerode": "^4.0.9",
+    "dotenv": "^17.2.3",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
+    "sharp": "^0.34.5",
+    "typescript": "^5.9.3",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2"
   }
 }
