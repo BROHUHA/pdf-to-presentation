@@ -568,24 +568,24 @@ export default function Home() {
 
       {deployedUrl && (
         <div className={styles.deployedBanner}>
-          <span>🎉 Live at:</span>
+          <span>Live at:</span>
           <a href={deployedUrl} target="_blank" rel="noopener noreferrer">{deployedUrl}</a>
         </div>
       )}
 
       <div className={styles.exportActions}>
         <button className="btn btn-primary" onClick={downloadZip}>
-          📦 Download ZIP
+          Download ZIP
         </button>
         <button
           className="btn btn-primary"
           onClick={deployToVercel}
           disabled={isDeploying}
         >
-          {isDeploying ? '🚀 Deploying...' : '🚀 Deploy to Vercel'}
+          {isDeploying ? 'Deploying...' : 'Deploy to Vercel'}
         </button>
         <button className="btn btn-secondary" onClick={() => window.open(previewUrl || '', '_blank')}>
-          🔗 Open Full Preview
+          Open Full Preview
         </button>
       </div>
 
@@ -615,7 +615,7 @@ export default function Home() {
     <main className={styles.main}>
       <header className={styles.header}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}>📄</span>
+          <span className={styles.logoIcon}>PDF</span>
           <span>PDF Slideshow</span>
         </div>
         <nav className={styles.nav}>
