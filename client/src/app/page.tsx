@@ -1,7 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import styles from './page.module.css';
+import Preloader from '../components/Preloader';
+import {
+  UploadIcon, DocumentIcon, TemplateIcon, FlipbookIcon, DocsIcon,
+  DownloadIcon, RocketIcon, LinkIcon, CheckIcon, ArrowRightIcon, ArrowLeftIcon,
+  HotspotIcon, LeadIcon, AIIcon, AnalyticsIcon, SEOIcon, MobileIcon
+} from '../components/Icons';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -28,6 +34,7 @@ interface Hotspot {
 type Template = 'presentation' | 'flipbook' | 'documentation';
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<'upload' | 'customize' | 'export'>('upload');
   const [job, setJob] = useState<Job | null>(null);
   const [template, setTemplate] = useState<Template>('presentation');
@@ -345,36 +352,36 @@ export default function Home() {
         )}
       </div>
 
-      <div className={styles.features}>
+      <div className={styles.featuresGrid}>
         <div className={styles.featureCard}>
-          <div className={styles.featureIcon}>🤖</div>
-          <h3>AI-Powered Search</h3>
-          <p>Ask questions and get instant answers from your PDF</p>
+          <AIIcon size={48} className={styles.featureIcon} />
+          <h3 className={styles.featureTitle}>AI-Powered Search</h3>
+          <p className={styles.featureDesc}>Ask questions and get instant answers from your PDF</p>
         </div>
         <div className={styles.featureCard}>
-          <div className={styles.featureIcon}>📱</div>
-          <h3>Mobile Reflow</h3>
-          <p>Automatic responsive layout for all devices</p>
+          <MobileIcon size={48} className={styles.featureIcon} />
+          <h3 className={styles.featureTitle}>Mobile Reflow</h3>
+          <p className={styles.featureDesc}>Automatic responsive layout for all devices</p>
         </div>
         <div className={styles.featureCard}>
-          <div className={styles.featureIcon}>📊</div>
-          <h3>Reading Analytics</h3>
-          <p>Track views, time spent, and engagement</p>
+          <AnalyticsIcon size={48} className={styles.featureIcon} />
+          <h3 className={styles.featureTitle}>Reading Analytics</h3>
+          <p className={styles.featureDesc}>Track views, time spent, and engagement</p>
         </div>
         <div className={styles.featureCard}>
-          <div className={styles.featureIcon}>🔍</div>
-          <h3>SEO Optimized</h3>
-          <p>Auto-generated meta tags for better rankings</p>
+          <SEOIcon size={48} className={styles.featureIcon} />
+          <h3 className={styles.featureTitle}>SEO Optimized</h3>
+          <p className={styles.featureDesc}>Auto-generated meta tags for better rankings</p>
         </div>
         <div className={styles.featureCard}>
-          <div className={styles.featureIcon}>🔗</div>
-          <h3>Live-Link Updates</h3>
-          <p>Update content without breaking links</p>
+          <LinkIcon size={48} className={styles.featureIcon} />
+          <h3 className={styles.featureTitle}>Live-Link Updates</h3>
+          <p className={styles.featureDesc}>Update content without breaking links</p>
         </div>
         <div className={styles.featureCard}>
-          <div className={styles.featureIcon}>🚀</div>
-          <h3>One-Click Deploy</h3>
-          <p>Instant deployment to Vercel</p>
+          <RocketIcon size={48} className={styles.featureIcon} />
+          <h3 className={styles.featureTitle}>One-Click Deploy</h3>
+          <p className={styles.featureDesc}>Instant deployment to Vercel</p>
         </div>
       </div>
     </div>
