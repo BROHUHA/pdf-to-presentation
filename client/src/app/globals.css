@@ -1,3 +1,6 @@
+/* Import Google Font - must be at top of file */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 /* Neo-Brutalist Design System */
 :root {
   /* Neo-Brutalist Colors - Bold and High Contrast */
@@ -91,8 +94,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Import Google Font */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/* Font import moved to top of file */
 
 /* Scrollbar styling - brutalist */
 ::-webkit-scrollbar {
