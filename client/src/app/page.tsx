@@ -121,6 +121,7 @@ export default function Home() {
       const pollStatus = async (): Promise<void> => {
         const response = await fetch(`${API_URL}/api/upload/status/${jobId}`);
         const status = await response.json();
+        const fileName = status.originalName || job?.originalName || 'document.pdf';
 
         if (status.status === 'completed') {
           // Check if conversion actually worked (pageCount > 0)
@@ -131,14 +132,18 @@ export default function Home() {
           } else {
             // Server conversion failed (no Docker), fall back to client-side
             console.log('Server conversion incomplete, trying client-side rendering...');
-            await clientSideRender(jobId, status.originalName);
+            await clientSideRender(jobId, fileName);
           }
-        } else if (status.status === 'failed') {
+        } else if (status.status === 'failed' || status.pageCount === 0) {
           // Try client-side rendering as fallback
           console.log('Server conversion failed, trying client-side rendering...');
-          await clientSideRender(jobId, status.originalName);
-        } else {
+          await clientSideRender(jobId, fileName);
+        } else if (status.status === 'processing') {
           setTimeout(pollStatus, 1000);
+        } else {
+          // Unknown status, try client-side
+          console.log('Unknown status, trying client-side rendering...');
+          await clientSideRender(jobId, fileName);
         }
       };
 
@@ -147,7 +152,7 @@ export default function Home() {
       console.error('Conversion error:', error);
       // Try client-side as last resort
       try {
-        await clientSideRender(jobId, job?.originalName || 'document');
+        await clientSideRender(jobId, job?.originalName || 'document.pdf');
       } catch (clientError: any) {
         alert(`Conversion failed: ${clientError.message}`);
         setIsConverting(false);

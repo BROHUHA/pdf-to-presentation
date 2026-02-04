@@ -54,8 +54,10 @@ router.post('/:jobId', async (req, res) => {
         console.log(`Job ${jobId} completed successfully`);
     } catch (error: any) {
         console.error(`Conversion failed for job ${jobId}:`, error);
+        // Set specific status so client knows to use PDF.js rendering
         job.status = 'failed';
         job.error = error.message;
+        job.pageCount = 0; // Explicitly set to 0 to trigger client-side rendering
         jobs.set(jobId, job);
     }
 });
