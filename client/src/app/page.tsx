@@ -168,18 +168,26 @@ export default function Home() {
       pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
       // Get the PDF file from server
+      setConversionProgress('Fetching PDF...');
       const pdfResponse = await fetch(`${API_URL}/api/upload/file/${jobId}`);
+      if (!pdfResponse.ok) {
+        throw new Error('Failed to fetch PDF file');
+      }
       const pdfBlob = await pdfResponse.blob();
       const arrayBuffer = await pdfBlob.arrayBuffer();
 
       // Load the PDF
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const pageCount = pdf.numPages;
-      const pages: string[] = [];
-      const textContent: string[] = [];
+      const title = fileName.replace('.pdf', '');
 
-      // Render each page to canvas and convert to base64
+      setConversionProgress(`Processing ${pageCount} pages...`);
+
+      // Render and upload each page individually (streaming to avoid memory issues)
       for (let i = 1; i <= pageCount; i++) {
+        setConversionProgress(`Rendering page ${i} of ${pageCount}...`);
+        setConversionTime(i);
+
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 2.0 }); // High quality
 
@@ -197,30 +205,44 @@ export default function Home() {
         // Extract text content
         const textContentItem = await page.getTextContent();
         const pageText = textContentItem.items.map((item: any) => item.str).join(' ');
-        textContent.push(pageText);
 
         // Convert canvas to base64 PNG
-        const dataUrl = canvas.toDataURL('image/png', 0.92);
-        pages.push(dataUrl);
+        const dataUrl = canvas.toDataURL('image/png', 0.85); // Slightly lower quality to save memory/bandwidth
 
-        // Update progress
-        setConversionTime(i);
-        setConversionProgress(`Processing page ${i} of ${pageCount}...`);
+        // Upload this page immediately (streaming)
+        setConversionProgress(`Uploading page ${i} of ${pageCount}...`);
+        const uploadResponse = await fetch(`${API_URL}/api/render/page/${jobId}/${i}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pageData: dataUrl,
+            textContent: pageText,
+            title: title
+          })
+        });
+
+        if (!uploadResponse.ok) {
+          console.error(`Failed to upload page ${i}`);
+        }
+
+        // Clear canvas to free memory
+        canvas.width = 0;
+        canvas.height = 0;
       }
 
-      // Send rendered pages and text to server
-      const saveResponse = await fetch(`${API_URL}/api/render/pages/${jobId}`, {
+      // Finalize the job
+      setConversionProgress('Finalizing...');
+      const completeResponse = await fetch(`${API_URL}/api/render/complete/${jobId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pages,
-          textContent, // Send extracted text
-          title: fileName.replace('.pdf', '')
+          pageCount,
+          title
         })
       });
 
-      if (!saveResponse.ok) {
-        throw new Error('Failed to save rendered pages');
+      if (!completeResponse.ok) {
+        throw new Error('Failed to finalize PDF processing');
       }
 
       // Update job status
@@ -229,7 +251,7 @@ export default function Home() {
         originalName: fileName,
         status: 'completed',
         pageCount: pageCount,
-        title: fileName.replace('.pdf', '')
+        title: title
       });
       setCurrentStep('customize');
       setIsConverting(false);
