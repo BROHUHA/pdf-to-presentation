@@ -1,4 +1,3 @@
-import Docker from 'dockerode';
 import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
@@ -6,8 +5,23 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-const docker = new Docker();
+// Skip Docker on Render or when explicitly disabled (saves memory)
+const SKIP_DOCKER = process.env.RENDER || process.env.SKIP_DOCKER === 'true';
+
+// Only load Docker if not skipped
+let docker: any = null;
+let Docker: any = null;
 const DOCKER_IMAGE = process.env.DOCKER_IMAGE || 'pdf2htmlex/pdf2htmlex:0.18.8.rc2-master-20200820-alpine-3.12.0-x86_64';
+
+if (!SKIP_DOCKER) {
+    try {
+        Docker = require('dockerode');
+        docker = new Docker();
+        console.log('Docker support enabled');
+    } catch (e) {
+        console.log('Docker not available, using client-side rendering');
+    }
+}
 
 interface ConversionResult {
     pageCount: number;
@@ -35,6 +49,11 @@ export async function convertPdfToHtml(pdfPath: string, outputDir: string): Prom
     const pdfNameNoExt = path.basename(pdfPath, '.pdf');
 
     try {
+        // Skip Docker entirely on Render/when disabled
+        if (SKIP_DOCKER || !docker) {
+            throw new Error('Docker unavailable - use client-side rendering');
+        }
+
         // Check if Docker is available
         await docker.ping();
 
